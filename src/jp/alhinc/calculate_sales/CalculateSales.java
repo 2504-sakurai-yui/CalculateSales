@@ -4,13 +4,18 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CalculateSales {
 
 	// 支店定義ファイル名
 	private static final String FILE_NAME_BRANCH_LST = "branch.lst";
+	
+	// 売上ファイル名
+	private static final String FILE_NAME_BRANCH_FILE = "rcdFiles";
 
 	// 支店別集計ファイル名
 	private static final String FILE_NAME_BRANCH_OUT = "branch.out";
@@ -37,8 +42,28 @@ public class CalculateSales {
 		}
 
 		// ※ここから集計処理を作成してください。(処理内容2-1、2-2)
-
-
+		// 処理内容2-1(売上ファイルのみ取り出す)
+		File[] files = new File("C:\\java\\売上集計課題").listFiles();
+		List<File> rcdFiles = new ArrayList<>();
+		
+		for(int i = 0; i < files.length; i++) {
+			if(files[i].getName().matches("^[0-9]{8}.+rcd$")) {
+				rcdFiles.add(files[i]);
+			}
+		}
+		
+		// 処理内容2-2(売上ファイル内読込)
+		for(int i= 0; i < rcdFiles.size(); i++) {
+			try {
+				if(!rcdFiles(args[0], FILE_NAME_BRANCH_FILE, branchNames, branchSales)) {
+					return;
+				}
+			} catch (IOException e) {
+				// TODO 自動生成された catch ブロック
+				e.printStackTrace();
+			}
+		}
+		
 
 		// 支店別集計ファイル書き込み処理
 		if(!writeFile(args[0], FILE_NAME_BRANCH_OUT, branchNames, branchSales)) {
@@ -68,7 +93,11 @@ public class CalculateSales {
 			// 一行ずつ読み込む
 			while((line = br.readLine()) != null) {
 				// ※ここの読み込み処理を変更してください。(処理内容1-2)
-				System.out.println(line);
+				String[] items = line.split(",");
+				branchNames.put(items[0], items[1]);
+				branchSales.put(items[0], 0L);
+				
+				//System.out.println(line);
 			}
 
 		} catch(IOException e) {
@@ -88,7 +117,52 @@ public class CalculateSales {
 		}
 		return true;
 	}
-
+	
+	/**
+	 * 売上ファイル読み込み処理
+	 *
+	 * @param フォルダパス
+	 * @param ファイル名
+	 * @param 支店コードと支店名を保持するMap
+	 * @param 支店コードと売上金額を保持するMap
+	 * @return 読み込み可否
+	 */
+	private static boolean rcdFiles(String path, String fileName, Map<String, String> branchNames, Map<String, Long> branchSales) throws IOException {
+		BufferedReader br = null;
+		
+		try {
+			File file = new File(path, fileName);
+			FileReader fr = new FileReader(file);
+			br = new BufferedReader(fr);
+			
+			String line;
+			File[] files = new File("rcdFiles").listFiles();
+			// 一行ずつ読み込む
+			for(int i = 0; i < files.length; i++) {
+				line = br.readLine();
+				System.out.println(line);
+				br.close();
+			
+			//while((line = br.readLine()) != null) {
+				//branchSales.put(files[i]);
+			}
+		} catch(IOException e) {
+			System.out.println(UNKNOWN_ERROR);
+			return false;
+		} finally {
+			// ファイルを開いている場合
+			if(br != null) {
+				try {
+					// ファイルを閉じる
+					br.close();
+				} catch(IOException e) {
+					System.out.println(UNKNOWN_ERROR);
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 	/**
 	 * 支店別集計ファイル書き込み処理
 	 *
