@@ -66,13 +66,13 @@ public class CalculateSales {
 					line.add(br.readLine());
 				}
 
-				
+
 				long fileSale = Long.parseLong((String) line.get(1));
 
 				Long saleAmount = branchSales.get(line.get(0)) + fileSale;
 				branchSales.put((String) line.get(0), saleAmount);
 
-				System.out.println(saleAmount);
+				//System.out.println(saleAmount);
 
 			} catch (IOException e) {
 				System.out.println(UNKNOWN_ERROR);
@@ -160,12 +160,12 @@ public class CalculateSales {
 	private static boolean writeFile(String path, String fileName, Map<String, String> branchNames, Map<String, Long> branchSales) {
 		// ※ここに書き込み処理を作成してください。(処理内容3-1)
 		BufferedWriter bw = null;
-		
+
 		try {
 			File file = new File("C:\\java\\売上集計課題\\branch.out");
 			FileWriter fw = new FileWriter(file);
 			bw = new BufferedWriter(fw);
-			
+
 			for(String key : branchNames.keySet()) {
 				bw.write(key + ", " + branchNames.get(key) + ", " + branchSales.get(key));
 				bw.newLine();
