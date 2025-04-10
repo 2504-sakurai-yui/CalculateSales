@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,8 @@ public class CalculateSales {
 	private static final String UNKNOWN_ERROR = "予期せぬエラーが発生しました";
 	private static final String FILE_NOT_EXIST = "支店定義ファイルが存在しません";
 	private static final String FILE_INVALID_FORMAT = "支店定義ファイルのフォーマットが不正です";
+	private static final String FILE_NOT_SERIAL_NUMBER = "売上ファイルが連番ではありません";
+	private static final String SALES_AMOUNT_DIGIT_OVER = "合計金額が10桁を超えました";
 
 	/**
 	 * メインメソッド
@@ -50,7 +53,20 @@ public class CalculateSales {
 				rcdFiles.add(files[i]);
 			}
 		}
-
+		
+		//エラー処理2-1 rcdFilesを昇順にソート
+		Collections.sort(rcdFiles);
+		//売上ファイルが連番かどうか
+		for(int i= 0; i < rcdFiles.size() - 1; i++) {
+			int former = Integer.parseInt((rcdFiles.get(i)).getName().substring(0, 8));
+			int latter = Integer.parseInt((rcdFiles.get(i + 1)).getName().substring(0, 8));
+			
+			if(latter - former != 1) {
+				System.out.println(FILE_NOT_SERIAL_NUMBER);
+			}
+		}
+		
+		
 		// 処理内容2-2(売上ファイル内読込、売上額を支店の合計金額に加算)
 		for (int i = 0; i < rcdFiles.size(); i++) {
 
@@ -67,8 +83,12 @@ public class CalculateSales {
 				}
 
 				long fileSale = Long.parseLong(line.get(1));
-
 				Long saleAmount = branchSales.get(line.get(0)) + fileSale;
+				//売上金額が10桁以下か
+				if(saleAmount >= 10000000000L) {
+					System.out.println(SALES_AMOUNT_DIGIT_OVER);
+				}
+				
 				branchSales.put(line.get(0), saleAmount);
 
 			} catch (IOException e) {
@@ -111,6 +131,12 @@ public class CalculateSales {
 
 		try {
 			File file = new File(path, fileName);
+			//ファイルの存在チェック
+			if(!file.exists()) {
+				System.out.println(FILE_NOT_EXIST);
+				return false;
+			}
+			
 			FileReader fr = new FileReader(file);
 			br = new BufferedReader(fr);
 
@@ -119,6 +145,11 @@ public class CalculateSales {
 			while ((line = br.readLine()) != null) {
 				// ※ここの読み込み処理を変更してください。(処理内容1-2)
 				String[] items = line.split(",");
+				if((items.length != 2) || (!items[0].matches("[0-9]{3}"))) {
+					System.out.println(FILE_INVALID_FORMAT);
+					return false;
+				}
+				
 				branchNames.put(items[0], items[1]);
 				branchSales.put(items[0], 0L);
 			}
