@@ -82,6 +82,7 @@ public class CalculateSales {
 						br.close();
 					} catch (IOException e) {
 						System.out.println(UNKNOWN_ERROR);
+						return;
 					}
 				}
 			}
@@ -165,7 +166,6 @@ public class CalculateSales {
 				bw.write(key + ", " + branchNames.get(key) + ", " + branchSales.get(key));
 				bw.newLine();
 			}
-			bw.close();
 
 		} catch (IOException e) {
 			System.out.println(UNKNOWN_ERROR);
