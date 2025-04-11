@@ -26,6 +26,8 @@ public class CalculateSales {
 	private static final String FILE_INVALID_FORMAT = "支店定義ファイルのフォーマットが不正です";
 	private static final String FILE_NOT_SERIAL_NUMBER = "売上ファイルが連番ではありません";
 	private static final String SALES_AMOUNT_DIGIT_OVER = "合計金額が10桁を超えました";
+	private static final String FILE_INVALID_KEY = "の支店コードが不正です";
+	private static final String SALE_FILE_INVALID_FORMAT = "のフォーマットが不正です";
 
 	/**
 	 * メインメソッド
@@ -38,6 +40,12 @@ public class CalculateSales {
 		// 支店コードと売上金額を保持するMap
 		Map<String, Long> branchSales = new HashMap<>();
 
+		//エラー処理3-1 コマンドライン引数が指定されているか
+		if(args.length != 1) {
+			System.out.println(UNKNOWN_ERROR);
+			return;
+		}
+
 		// 支店定義ファイル読み込み処理
 		if (!readFile(args[0], FILE_NAME_BRANCH_LST, branchNames, branchSales)) {
 			return;
@@ -48,28 +56,34 @@ public class CalculateSales {
 		File[] files = new File(args[0]).listFiles();
 		List<File> rcdFiles = new ArrayList<>();
 
+		//課題のすべてのファイルから売上ファイルの仕様に合ったものだけをrcdFilesに追加する
 		for (int i = 0; i < files.length; i++) {
 			if (files[i].getName().matches("^[0-9]{8}[.]rcd$")) {
 				rcdFiles.add(files[i]);
 			}
+
+			//エラー処理3 売上ファイルがファイルなのか（ディレクトリではないか）
+			if(!(files[i].isFile()) && !((rcdFiles.get(i)).getName()).matches("^[0-9]{8}[.]rcd$")) {
+				System.out.println(UNKNOWN_ERROR);
+				return;
+			}
 		}
-		
+
 		//エラー処理2-1 rcdFilesを昇順にソート
 		Collections.sort(rcdFiles);
-		//売上ファイルが連番かどうか
+		//エラー処理2-1 売上ファイルが連番かどうか
 		for(int i= 0; i < rcdFiles.size() - 1; i++) {
 			int former = Integer.parseInt((rcdFiles.get(i)).getName().substring(0, 8));
 			int latter = Integer.parseInt((rcdFiles.get(i + 1)).getName().substring(0, 8));
-			
+
 			if(latter - former != 1) {
 				System.out.println(FILE_NOT_SERIAL_NUMBER);
+				return;
 			}
 		}
-		
-		
+
 		// 処理内容2-2(売上ファイル内読込、売上額を支店の合計金額に加算)
 		for (int i = 0; i < rcdFiles.size(); i++) {
-
 			BufferedReader br = null;
 
 			try {
@@ -77,22 +91,46 @@ public class CalculateSales {
 				FileReader fr = new FileReader(file);
 				br = new BufferedReader(fr);
 
-				List<String> line = new ArrayList<>();
-				for (int j = 0; j < 2; j++) {
-					line.add(br.readLine());
+				//売上ファイルの中身を一行ずつ読む→lineに格納
+				List<String> saleFiles = new ArrayList<>();
+				String line;
+				while((line = br.readLine()) != null) {
+					saleFiles.add(line);
 				}
 
-				long fileSale = Long.parseLong(line.get(1));
-				Long saleAmount = branchSales.get(line.get(0)) + fileSale;
-				//売上金額が10桁以下か
+				//エラー処理2-4 売上ファイルの中身が不正なフォーマットの場合
+				if(saleFiles.size() != 2) {
+					System.out.println("<" + (rcdFiles.get(i)).getName() + ">" + SALE_FILE_INVALID_FORMAT);
+					return;
+				}
+
+				//エラー処理2-3 売上ファイルの支店コードが支店定義ファイルに存在しているか
+				if(!branchNames.containsKey(saleFiles.get(0))) {
+					System.out.println("<" + (rcdFiles.get(i)).getName() + ">" + FILE_INVALID_KEY);
+					return;
+				}
+				//エラー処理3 売上金額が数字なのか
+				if(!saleFiles.get(1).matches("^\\d{1,10}$")) {
+					System.out.println(UNKNOWN_ERROR);
+					return;
+				}
+
+				//売上金額をlong型にする
+				long fileSale = Long.parseLong(saleFiles.get(1));
+
+				Long saleAmount = branchSales.get(saleFiles.get(0)) + fileSale;
+				//エラー処理2-2 合計売上金額が10桁以下か
 				if(saleAmount >= 10000000000L) {
 					System.out.println(SALES_AMOUNT_DIGIT_OVER);
+					return;
 				}
-				
-				branchSales.put(line.get(0), saleAmount);
+
+				//branchSalesに支店コードと合計売上金額を入れる
+				branchSales.put(saleFiles.get(0), saleAmount);
 
 			} catch (IOException e) {
 				System.out.println(UNKNOWN_ERROR);
+				return;
 
 			} finally {
 				// ファイルを開いている場合
@@ -131,12 +169,12 @@ public class CalculateSales {
 
 		try {
 			File file = new File(path, fileName);
-			//ファイルの存在チェック
+			//エラー処理1-1 ファイルの存在チェック
 			if(!file.exists()) {
 				System.out.println(FILE_NOT_EXIST);
 				return false;
 			}
-			
+
 			FileReader fr = new FileReader(file);
 			br = new BufferedReader(fr);
 
@@ -145,13 +183,16 @@ public class CalculateSales {
 			while ((line = br.readLine()) != null) {
 				// ※ここの読み込み処理を変更してください。(処理内容1-2)
 				String[] items = line.split(",");
+				//エラー処理1-2 支店定義ファイルのフォーマットが不正の場合
 				if((items.length != 2) || (!items[0].matches("[0-9]{3}"))) {
 					System.out.println(FILE_INVALID_FORMAT);
 					return false;
 				}
-				
+
+				//branchNamesに支店コードと支店名、branchSalesに支店コードと初期値0を入れる
 				branchNames.put(items[0], items[1]);
 				branchSales.put(items[0], 0L);
+
 			}
 
 		} catch (IOException e) {
@@ -171,7 +212,7 @@ public class CalculateSales {
 			}
 		}
 		return true;
-		
+
 	}
 
 	/**
@@ -193,8 +234,10 @@ public class CalculateSales {
 			FileWriter fw = new FileWriter(file);
 			bw = new BufferedWriter(fw);
 
+			//mapからすべてのkeyを取得する→書き込む
 			for (String key : branchNames.keySet()) {
 				bw.write(key + ", " + branchNames.get(key) + ", " + branchSales.get(key));
+				//改行
 				bw.newLine();
 			}
 
@@ -215,7 +258,7 @@ public class CalculateSales {
 			}
 		}
 		return true;
-		
+
 	}
 
 }
