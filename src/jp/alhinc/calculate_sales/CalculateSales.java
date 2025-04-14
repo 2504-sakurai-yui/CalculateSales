@@ -58,12 +58,12 @@ public class CalculateSales {
 		}
 
 		// 支店定義ファイル読み込み処理
-		if (!readFile(args[0], FILE_NAME_BRANCH_LST, branchNames, branchSales, "[0-9]{3}", "支店")) {
+		if (!readFile(args[0], FILE_NAME_BRANCH_LST, branchNames, branchSales, "^[0-9]{3}$", "支店")) {
 			return;
 		}
 
 		//商品定義ファイルの読み込み処理
-		if (!readFile(args[0], FILE_NAME_COMMODITY_LST, commodityNames, commoditySales, "[0-9a-zA-Z]{8}", "商品")) {
+		if (!readFile(args[0], FILE_NAME_COMMODITY_LST, commodityNames, commoditySales, "^[0-9a-zA-Z]{8}$", "商品")) {
 			return;
 		}
 
@@ -139,7 +139,7 @@ public class CalculateSales {
 				Long commoditySaleAmount = commoditySales.get(saleFiles.get(1)) + fileSale;
 
 				//エラー処理2-2 合計売上金額が10桁以下か
-				if ((branchSaleAmount >= 10000000000L) && (commoditySaleAmount >= 10000000000L)) {
+				if ((branchSaleAmount >= 10000000000L) || (commoditySaleAmount >= 10000000000L)) {
 					System.out.println(SALES_AMOUNT_DIGIT_OVER);
 					return;
 				}
@@ -222,7 +222,6 @@ public class CalculateSales {
 				//Namesに支店コード(商品コード)と支店名(商品名)、Salesに支店コード(商品コード)と初期値0を入れる
 				names.put(items[0], items[1]);
 				sales.put(items[0], 0L);
-
 			}
 
 		} catch (IOException e) {
